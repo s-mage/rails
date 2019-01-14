@@ -73,7 +73,8 @@ module ActionCable
       # instead of the default of just transmitting the updates straight to the subscriber.
       # Pass <tt>coder: ActiveSupport::JSON</tt> to decode messages as JSON before passing to the callback.
       # Defaults to <tt>coder: nil</tt> which does no decoding, passes raw messages.
-      def stream_from(broadcasting, callback = nil, coder: nil, &block)
+      # Pass <tt>on_subscribe: -> { broadcast_initial_state }</tt> to make a callback when stream is established.
+      def stream_from(broadcasting, callback = nil, coder: nil, on_subscribe: nil, &block)
         broadcasting = String(broadcasting)
 
         # Don't send the confirmation until pubsub#subscribe is successful
@@ -87,6 +88,7 @@ module ActionCable
         connection.server.event_loop.post do
           pubsub.subscribe(broadcasting, handler, lambda do
             ensure_confirmation_sent
+            on_subscribe&.call
             logger.info "#{self.class.name} is streaming from #{broadcasting}"
           end)
         end
